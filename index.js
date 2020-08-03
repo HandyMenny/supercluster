@@ -156,10 +156,18 @@ export default class Supercluster {
 
     getClusterExpansionZoom(clusterId) {
         let expansionZoom = this._getOriginZoom(clusterId) - 1;
-        while (expansionZoom <= this.options.maxZoom) {
+        a: while (expansionZoom <= this.options.maxZoom) {
             const children = this.getChildren(clusterId);
             expansionZoom++;
-            if (children.length !== 1) break;
+            if (children.length !== 1) {
+                for (const child of children) {
+                    const props = child.properties;
+                    if (!props || !props.cluster || props.point_count > 4)
+                        break a;
+                    clusterId = props.cluster_id;
+                }
+                continue;
+            }
             clusterId = children[0].properties.cluster_id;
         }
         return expansionZoom;
