@@ -39,7 +39,7 @@ export default class Supercluster {
         // generate a cluster object for each point and index input points into a KD-tree
         let clusters = [];
         for (let i = 0; i < points.length; i++) {
-            if (!points[i].geometry) continue;
+            if (!points[i]._latlng) continue;
             clusters.push(createPointCluster(points[i], i));
         }
         this.trees[maxZoom + 1] = new KDBush(clusters, getX, getY, nodeSize, Float32Array);
@@ -83,7 +83,7 @@ export default class Supercluster {
         const clusters = [];
         for (const id of ids) {
             const c = tree.points[id];
-            clusters.push(c.numPoints ? getClusterJSON(c) : this.points[c.index]);
+            clusters.push(c.numPoints ? getClusterJS(c) : this.points[c.index]);
         }
         return clusters;
     }
@@ -105,7 +105,7 @@ export default class Supercluster {
         for (const id of ids) {
             const c = index.points[id];
             if (c.parentId === clusterId) {
-                children.push(c.numPoints ? getClusterJSON(c) : this.points[c.index]);
+                children.push(c.numPoints ? getClusterJS(c) : this.points[c.index]);
             }
         }
 
@@ -334,7 +334,7 @@ function createCluster(x, y, id, numPoints, properties) {
 }
 
 function createPointCluster(p, id) {
-    const [x, y] = p.geometry.coordinates;
+    const [x, y] = [p._latlng.lng, p._latlng.lat];
     return {
         x: lngX(x), // projected point coordinates
         y: latY(y),
@@ -344,14 +344,13 @@ function createPointCluster(p, id) {
     };
 }
 
-function getClusterJSON(cluster) {
+function getClusterJS(cluster) {
     return {
-        type: 'Feature',
         id: cluster.id,
         properties: getClusterProperties(cluster),
-        geometry: {
-            type: 'Point',
-            coordinates: [xLng(cluster.x), yLat(cluster.y)]
+        _latlng: {
+            lat: yLat(cluster.y),
+            lng: xLng(cluster.x)
         }
     };
 }
