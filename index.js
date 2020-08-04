@@ -10,9 +10,6 @@ const defaultOptions = {
     nodeSize: 64, // size of the KD-tree leaf node, affects performance
     log: false,   // whether to log timing info
 
-    // whether to generate numeric ids for input features (in vector tiles)
-    generateId: false,
-
     // a reduce function for calculating custom cluster properties
     reduce: null, // (accumulated, props) => { accumulated.sum += props.sum; }
 
@@ -124,36 +121,6 @@ export default class Supercluster {
         return leaves;
     }
 
-    getTile(z, x, y) {
-        const tree = this.trees[this._limitZoom(z)];
-        const z2 = Math.pow(2, z);
-        const {extent, radius} = this.options;
-        const p = radius / extent;
-        const top = (y - p) / z2;
-        const bottom = (y + 1 + p) / z2;
-
-        const tile = {
-            features: []
-        };
-
-        this._addTileFeatures(
-            tree.range((x - p) / z2, top, (x + 1 + p) / z2, bottom),
-            tree.points, x, y, z2, tile);
-
-        if (x === 0) {
-            this._addTileFeatures(
-                tree.range(1 - p / z2, top, 1, bottom),
-                tree.points, z2, y, z2, tile);
-        }
-        if (x === z2 - 1) {
-            this._addTileFeatures(
-                tree.range(0, top, p / z2, bottom),
-                tree.points, -1, y, z2, tile);
-        }
-
-        return tile.features.length ? tile : null;
-    }
-
     getClusterExpansionZoom(clusterId) {
         let expansionZoom = this._getOriginZoom(clusterId) - 1;
         a: while (expansionZoom <= this.options.maxZoom) {
@@ -199,37 +166,6 @@ export default class Supercluster {
         }
 
         return skipped;
-    }
-
-    _addTileFeatures(ids, points, x, y, z2, tile) {
-        for (const i of ids) {
-            const c = points[i];
-            const isCluster = c.numPoints;
-            const f = {
-                type: 1,
-                geometry: [[
-                    Math.round(this.options.extent * (c.x * z2 - x)),
-                    Math.round(this.options.extent * (c.y * z2 - y))
-                ]],
-                tags: isCluster ? getClusterProperties(c) : this.points[c.index].properties
-            };
-
-            // assign id
-            let id;
-            if (isCluster) {
-                id = c.id;
-            } else if (this.options.generateId) {
-                // optionally generate id
-                id = c.index;
-            } else if (this.points[c.index].id) {
-                // keep id if already assigned
-                id = this.points[c.index].id;
-            }
-
-            if (id !== undefined) f.id = id;
-
-            tile.features.push(f);
-        }
     }
 
     _limitZoom(z) {
