@@ -365,14 +365,10 @@ function getClusterJS(cluster) {
 
 function getClusterProperties(cluster) {
     const count = cluster.numPoints;
-    const abbrev =
-        count >= 10000 ? `${Math.round(count / 1000)  }k` :
-        count >= 1000 ? `${Math.round(count / 100) / 10  }k` : count;
     return extend(extend({}, cluster.properties), {
         cluster: true,
         cluster_id: cluster.id,
         point_count: count,
-        point_count_abbreviated: abbrev
     });
 }
 
